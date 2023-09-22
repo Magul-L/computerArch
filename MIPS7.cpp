@@ -97,7 +97,45 @@ public:
     }
     else if (ALUOP == NOR)
     {
-      ALUresult = ~(oprand1 | oprand2);
+      // ALUresult = (~(oprand1 | oprand2)) & (bitset<32> (0xff));
+      // ALUresult = ~(oprand1 | oprand2);
+      int pos = -1;
+      int posOp1 = -1;
+      int posOp2 = -1;
+      bitset<32> norre;
+
+      for (int i = 0; i < 32; i++)
+      {
+        
+        if (oprand1.to_string()[i] == '1'&& posOp1 == -1)
+        {
+
+          posOp1 = i;
+
+        }
+        
+        if (oprand2.to_string()[i] == '1' && posOp2 == -1)
+        {
+          
+          posOp2 = i;
+
+        }
+      }
+      
+      if (posOp1 == -1 && posOp2 == -1)//0 nor 0
+      {
+        ALUresult = bitset<32>(1);
+      }
+      
+      else
+      {
+        pos = min(posOp1, posOp2);
+        norre = ~(oprand1 | oprand2);
+        string re = norre.to_string().substr(pos);
+        ALUresult = bitset<32>(re);
+
+      }
+ 
     }
     else
     {
@@ -285,9 +323,9 @@ int main()
     //   break;
     // }
     
-    if(fetch == bitset<32> ("00000000000000000000000000000000")){
-      break;
-    }
+    // if(fetch == bitset<32> ("00000000000000000000000000000000")){
+    //   break;
+    // }
     if(fetch == end ){
 
       break;
@@ -369,8 +407,14 @@ int main()
       myRF.ReadWrite(rs,rt,rt,bitset<32> (0),0);
       if(myRF.ReadData1.to_ulong() == myRF.ReadData2.to_ulong()){
 
-        pc = pc + imm.to_ulong();
-
+        string pctemp = "";
+        
+        for(int x = 0;x < 14;x++){
+          pctemp = pctemp + imm.to_string()[15];
+        } 
+        pctemp = pctemp + imm.to_string() + "00";
+        bitset<32> finalpc(pctemp); 
+        pc = pc + finalpc.to_ulong();
       }
       
 
@@ -411,15 +455,20 @@ int main()
       //get lst 26 bits(address)
       bitset<32> mask = 0b000011111111111111111111111111;
       bitset<26> jump_address = (fetch & mask).to_ulong();
+      bitset<32> bitsetVal (pc);
+      bitset<4> lastFourBits(bitsetVal.to_string().substr(28,4));
 
       //j address // PC ← {PC+4[31:28], address, 00}
-      pc = (0b00|(pc) >> 28) | (jump_address.to_ulong() );
+      
+      bitset<32> fpc("00" + jump_address.to_string() + lastFourBits.to_string());
+      
+      pc = fpc.to_ulong();
       
     
     }
 
     /**** You don't need to modify the following lines. ****/
-    count++;
+    // count++;
     myRF.OutputRF(); // dump RF;    
   }
   myDataMem.OutputDataMem(); // dump data mem
