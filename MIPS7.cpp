@@ -97,7 +97,37 @@ public:
     }
     else if (ALUOP == NOR)
     {
-      ALUresult = ~(oprand1 | oprand2);
+      int pos = -1;
+      int posOp1 = -1;
+      int posOp2 = -1;
+      bitset<32> norre;
+
+      for (int i = 0; i < 32; i++)
+      {
+        if (oprand1.to_string()[i] == '1'&& posOp1 == -1)
+        {
+          posOp1 = i;
+        }
+        if (oprand2.to_string()[i] == '1' && posOp2 == -1)
+        {
+          posOp2 = i;
+        }
+      }
+      if (posOp1 == -1 && posOp2 == -1)//0 nor 0
+      {
+        ALUresult = bitset<32>(1);
+      }else
+      {
+        pos = min(posOp1, posOp2);
+        norre = ~(oprand1 | oprand2);
+        string re = norre.to_string().substr(pos);
+        ALUresult = bitset<32>(re);
+
+      }
+      
+
+      // ALUresult = ~(oprand1 | oprand2) & (bitset<32>)0xff;
+      //  ALUresult = ~(oprand1 | oprand2);
     }
     else
     {
@@ -150,15 +180,13 @@ public:
       error = 1;
     }
 
-
-
-    //bitset<32> instruction(0);
+    // bitset<32> instruction(0);
     string byte;
     for (int i = 0; i < 4; i++)
     {
       byte = byte + IMem[addr + i].to_string();
     }
-    std::bitset<32> instruction (byte);
+    std::bitset<32> instruction(byte);
     Instruction = instruction;
     return Instruction;
   }
@@ -190,7 +218,7 @@ public:
       cout << "Unable to open file";
     dmem.close();
   }
-  
+
   bitset<32> MemoryAccess(bitset<32> Address, bitset<32> WriteData, bitset<1> readmem, bitset<1> writemem)
   {
     /**
@@ -216,9 +244,9 @@ public:
     {
       for (int i = 0; i < 4; i++)
       {
-        
-        byte = wd.substr(i*8,8);
-        DMem[addr + i] = bitset <8> (byte);
+
+        byte = wd.substr(i * 8, 8);
+        DMem[addr + i] = bitset<8>(byte);
       }
     }
 
@@ -227,10 +255,9 @@ public:
       ;
       for (int i = 0; i < 4; i++)
       {
-        byte =  byte + DMem[addr+i].to_string();
-
+        byte = byte + DMem[addr + i].to_string();
       }
-      readdata = bitset <32> (byte);
+      readdata = bitset<32>(byte);
     }
 
     return readdata;
@@ -264,9 +291,9 @@ int main()
   INSMem myInsMem;
   DataMem myDataMem;
   int pc = 0;
-  
+
   bitset<32> end("11111111111111111111111111111111");
-  while (1)  // TODO: implement!
+  while (1) // TODO: implement!
   {
     // Fetch: fetch an instruction from myInsMem.
 
@@ -279,153 +306,152 @@ int main()
     // Read/Write Mem: access data memory (myDataMem)
 
     // Write back to RF: some operations may write things to RF
-    bitset<32> fetch = myInsMem.ReadMemory(bitset<32> (pc));
+    bitset<32> fetch = myInsMem.ReadMemory(bitset<32>(pc));
     pc = pc + 4;
     // if(count > 16383){
     //   break;
     // }
-    
-    if(fetch == bitset<32> ("00000000000000000000000000000000")){
+
+    if (fetch == bitset<32>("00000000000000000000000000000000"))
+    {
       break;
     }
-    if(fetch == end ){
+    if (fetch == end)
+    {
 
       break;
-
     }
-    //rtype
-    if(fetch.to_string().substr(0,6) == "000000"){
-      bitset<5> rs(fetch.to_string().substr(6,5));
-      bitset<5> rt(fetch.to_string().substr(11,5));
-      bitset<5> rd(fetch.to_string().substr(16,5));
-      bitset<6> funct(fetch.to_string().substr(26,6));
+    // rtype
+    if (fetch.to_string().substr(0, 6) == "000000")
+    {
+      bitset<5> rs(fetch.to_string().substr(6, 5));
+      bitset<5> rt(fetch.to_string().substr(11, 5));
+      bitset<5> rd(fetch.to_string().substr(16, 5));
+      bitset<6> funct(fetch.to_string().substr(26, 6));
       bitset<6> addu(0x21);
       bitset<6> subu(0x23);
       bitset<6> And(0x24);
       bitset<6> Or(0x25);
       bitset<6> nor(0x27);
 
-      if(funct.to_string() == addu.to_string()){
-        
-        myRF.ReadWrite(rs,rt,rd,bitset<32> (0),0);
-        myALU.ALUOperation(ADDU,myRF.ReadData1,myRF.ReadData2);
-        myRF.ReadWrite(rs,rt,rd,myALU.ALUresult,1);
-      
+      if (funct.to_string() == addu.to_string())
+      {
+
+        myRF.ReadWrite(rs, rt, rd, bitset<32>(0), 0);
+        myALU.ALUOperation(ADDU, myRF.ReadData1, myRF.ReadData2);
+        myRF.ReadWrite(rs, rt, rd, myALU.ALUresult, 1);
       }
 
-      else if(funct.to_string() == subu.to_string()){
-        
-        myRF.ReadWrite(rs,rt,rd,bitset<32> (0),0);
-        myALU.ALUOperation(SUBU,myRF.ReadData1,myRF.ReadData2);
-        myRF.ReadWrite(rs,rt,rd,myALU.ALUresult,1);
+      else if (funct.to_string() == subu.to_string())
+      {
 
-      }
-      
-      else if(funct.to_string() == And.to_string()){
-        
-        myRF.ReadWrite(rs,rt,rd,bitset<32> (0),0);
-        myALU.ALUOperation(AND,myRF.ReadData1,myRF.ReadData2);
-        myRF.ReadWrite(rs,rt,rd,myALU.ALUresult,1);
-
-      }
-      
-      else if(funct.to_string() == Or.to_string()){
-        
-        myRF.ReadWrite(rs,rt,rd,bitset<32> (0),0);
-        myALU.ALUOperation(OR,myRF.ReadData1,myRF.ReadData2);
-        myRF.ReadWrite(rs,rt,rd,myALU.ALUresult,1);
-
+        myRF.ReadWrite(rs, rt, rd, bitset<32>(0), 0);
+        myALU.ALUOperation(SUBU, myRF.ReadData1, myRF.ReadData2);
+        myRF.ReadWrite(rs, rt, rd, myALU.ALUresult, 1);
       }
 
-      else if(funct.to_string() == nor.to_string()){
-        
-        myRF.ReadWrite(rs,rt,rd,bitset<32> (0),0);
-        myALU.ALUOperation(NOR,myRF.ReadData1,myRF.ReadData2);
-        myRF.ReadWrite(rs,rt,rd,myALU.ALUresult,1);
+      else if (funct.to_string() == And.to_string())
+      {
 
+        myRF.ReadWrite(rs, rt, rd, bitset<32>(0), 0);
+        myALU.ALUOperation(AND, myRF.ReadData1, myRF.ReadData2);
+        myRF.ReadWrite(rs, rt, rd, myALU.ALUresult, 1);
       }
-    
+
+      else if (funct.to_string() == Or.to_string())
+      {
+
+        myRF.ReadWrite(rs, rt, rd, bitset<32>(0), 0);
+        myALU.ALUOperation(OR, myRF.ReadData1, myRF.ReadData2);
+        myRF.ReadWrite(rs, rt, rd, myALU.ALUresult, 1);
+      }
+
+      else if (funct.to_string() == nor.to_string())
+      {
+
+        myRF.ReadWrite(rs, rt, rd, bitset<32>(0), 0);
+        myALU.ALUOperation(NOR, myRF.ReadData1, myRF.ReadData2);
+        myRF.ReadWrite(rs, rt, rd, myALU.ALUresult, 1);
+      }
     }
 
-    //addiu
-    else if(fetch.to_string().substr(0,6) == "001001"){
+    // addiu
+    else if (fetch.to_string().substr(0, 6) == "001001")
+    {
 
-      bitset<5> rs(fetch.to_string().substr(6,5));
-      bitset<5> rt(fetch.to_string().substr(11,5));
-      bitset<32> imm(fetch.to_string().substr(16,16));
-      
-      myRF.ReadWrite(rs,rt,rt,bitset<32> (0),0);
-      myALU.ALUOperation(ADDU,myRF.ReadData1, imm);
-      myRF.ReadWrite(rs,rt,rt,myALU.ALUresult,1);
+      bitset<5> rs(fetch.to_string().substr(6, 5));
+      bitset<5> rt(fetch.to_string().substr(11, 5));
+      bitset<32> imm(fetch.to_string().substr(16, 16));
 
+      myRF.ReadWrite(rs, rt, rt, bitset<32>(0), 0);
+      myALU.ALUOperation(ADDU, myRF.ReadData1, imm);
+      myRF.ReadWrite(rs, rt, rt, myALU.ALUresult, 1);
     }
-    //beq
-    else if(fetch.to_string().substr(0,6) == "000100"){
+    // beq
+    else if (fetch.to_string().substr(0, 6) == "000100")
+    {
 
-      bitset<5> rs(fetch.to_string().substr(6,5));
-      bitset<5> rt(fetch.to_string().substr(11,5));
-      bitset<32> imm(fetch.to_string().substr(16,16));
+      bitset<5> rs(fetch.to_string().substr(6, 5));
+      bitset<5> rt(fetch.to_string().substr(11, 5));
+      bitset<32> imm(fetch.to_string().substr(16, 16));
 
-      myRF.ReadWrite(rs,rt,rt,bitset<32> (0),0);
-      if(myRF.ReadData1.to_ulong() == myRF.ReadData2.to_ulong()){
+      myRF.ReadWrite(rs, rt, rt, bitset<32>(0), 0);
+      if (myRF.ReadData1.to_ulong() == myRF.ReadData2.to_ulong())
+      {
 
         pc = pc + imm.to_ulong();
-
       }
-      
-
     }
-    //lw
-    else if(fetch.to_string().substr(0,6) == "100011"){
+    // lw
+    else if (fetch.to_string().substr(0, 6) == "100011")
+    {
 
-      bitset<5> rs(fetch.to_string().substr(6,5));
-      bitset<5> rt(fetch.to_string().substr(11,5));
-      bitset<32> imm(fetch.to_string().substr(16,16));
+      bitset<5> rs(fetch.to_string().substr(6, 5));
+      bitset<5> rt(fetch.to_string().substr(11, 5));
+      bitset<32> imm(fetch.to_string().substr(16, 16));
       bitset<32> addr(0);
       long addr_result;
 
-      myRF.ReadWrite(rs,rt,rt,bitset<32> (0),0);
+      myRF.ReadWrite(rs, rt, rt, bitset<32>(0), 0);
       addr_result = imm.to_ulong() + myRF.ReadData1.to_ulong();
-      addr = bitset<32> (addr_result);
-      myDataMem.MemoryAccess(addr,bitset<32> (0),1,0);
-      myRF.ReadWrite(rs,rt,rt,myDataMem.readdata,1);
-  
+      addr = bitset<32>(addr_result);
+      myDataMem.MemoryAccess(addr, bitset<32>(0), 1, 0);
+      myRF.ReadWrite(rs, rt, rt, myDataMem.readdata, 1);
     }
-    //sw
-    else if(fetch.to_string().substr(0,6) == "101011"){
-      
-      bitset<5> rs(fetch.to_string().substr(6,5));
-      bitset<5> rt(fetch.to_string().substr(11,5));
-      bitset<32> imm(fetch.to_string().substr(16,16));
+    // sw
+    else if (fetch.to_string().substr(0, 6) == "101011")
+    {
+
+      bitset<5> rs(fetch.to_string().substr(6, 5));
+      bitset<5> rt(fetch.to_string().substr(11, 5));
+      bitset<32> imm(fetch.to_string().substr(16, 16));
       bitset<32> addr(0);
       long addr_result;
 
-      myRF.ReadWrite(rs,rt,rt,bitset<32> (0),0);
+      myRF.ReadWrite(rs, rt, rt, bitset<32>(0), 0);
       addr_result = imm.to_ulong() + myRF.ReadData1.to_ulong();
-      addr = bitset<32> (addr_result);
-      myDataMem.MemoryAccess(addr,myRF.ReadData2,0,1);
-    
+      addr = bitset<32>(addr_result);
+      myDataMem.MemoryAccess(addr, myRF.ReadData2, 0, 1);
     }
-    //j
-    else if(fetch.to_string().substr(0,6) == "000010"){
-      //get lst 26 bits(address)
+    // j
+    else if (fetch.to_string().substr(0, 6) == "000010")
+    {
+      // get lst 26 bits(address)
       bitset<32> mask = 0b000011111111111111111111111111;
       bitset<26> jump_address = (fetch & mask).to_ulong();
 
-      //j address // PC ← {PC+4[31:28], address, 00}
-      pc = (0b00|(pc) >> 28) | (jump_address.to_ulong() );
-      
-    
+      bitset<32> bitsetVal(pc);
+      bitset<4> lastFourBits(bitsetVal.to_string().substr(28));
+      // j address // PC ← {PC+4[31:28], address, 00}
+
+      pc = (0b00 | (jump_address.to_ulong() | lastFourBits.to_ulong()));
     }
 
     /**** You don't need to modify the following lines. ****/
     count++;
-    myRF.OutputRF(); // dump RF;    
+    myRF.OutputRF(); // dump RF;
   }
   myDataMem.OutputDataMem(); // dump data mem
 
   return 0;
 }
-
-
-
